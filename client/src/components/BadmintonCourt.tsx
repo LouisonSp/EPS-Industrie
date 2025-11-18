@@ -246,8 +246,14 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
       return null;
     }
 
-    const canvasX = clientX - rect.left;
-    const canvasY = clientY - rect.top;
+    // Calculer le ratio entre la taille réelle du canvas et sa taille affichée
+    // Important pour corriger le décalage sur mobile
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    // Obtenir les coordonnées relatives au canvas affiché
+    const canvasX = (clientX - rect.left) * scaleX;
+    const canvasY = (clientY - rect.top) * scaleY;
     
     // Normaliser en coordonnées de base (diviser par zoomFactor)
     return {
