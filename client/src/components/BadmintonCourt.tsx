@@ -119,26 +119,32 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
   const drawRallyPoints = (ctx: CanvasRenderingContext2D, points: RallyPoint[]) => {
     ctx.fillStyle = '#ff4444';
     points.forEach((point, index) => {
+      // Convertir les coordonnées de base en coordonnées zoomées
+      const x = point.x * zoomFactor;
+      const y = point.y * zoomFactor;
+      
       ctx.beginPath();
-      ctx.arc(point.x, point.y, 4, 0, 2 * Math.PI);
+      ctx.arc(x, y, 4 * zoomFactor, 0, 2 * Math.PI);
       ctx.fill();
       
       // Numéro du point
       ctx.fillStyle = '#fff';
-      ctx.font = '10px Arial';
+      ctx.font = `${10 * zoomFactor}px Arial`;
       ctx.textAlign = 'center';
-      ctx.fillText((index + 1).toString(), point.x, point.y + 3);
+      ctx.fillText((index + 1).toString(), x, y + 3 * zoomFactor);
       ctx.fillStyle = '#ff4444';
     });
     
     // Lignes entre les points (grises et fines)
     if (points.length > 1) {
       ctx.strokeStyle = '#999999';
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 1 * zoomFactor;
       ctx.beginPath();
-      ctx.moveTo(points[0].x, points[0].y);
+      const firstPoint = points[0];
+      ctx.moveTo(firstPoint.x * zoomFactor, firstPoint.y * zoomFactor);
       for (let i = 1; i < points.length; i++) {
-        ctx.lineTo(points[i].x, points[i].y);
+        const p = points[i];
+        ctx.lineTo(p.x * zoomFactor, p.y * zoomFactor);
       }
       ctx.stroke();
     }
@@ -146,6 +152,11 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
 
   const drawScorePoints = (ctx: CanvasRenderingContext2D, points: ScorePoint[]) => {
     points.forEach((point, index) => {
+      // Convertir les coordonnées de base en coordonnées zoomées
+      const x = point.x * zoomFactor;
+      const y = point.y * zoomFactor;
+      const size = 6 * zoomFactor;
+      
       // Couleur de base selon le joueur
       const baseColor = point.player === 1 ? '#28a745' : '#dc3545';
       
@@ -181,36 +192,36 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
       
       if (shape === 'circle') {
         ctx.beginPath();
-        ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
+        ctx.arc(x, y, size, 0, 2 * Math.PI);
         ctx.fill();
       } else if (shape === 'square') {
-        ctx.fillRect(point.x - 6, point.y - 6, 12, 12);
+        ctx.fillRect(x - size, y - size, size * 2, size * 2);
       } else if (shape === 'triangle') {
         ctx.beginPath();
-        ctx.moveTo(point.x, point.y - 6);
-        ctx.lineTo(point.x - 6, point.y + 6);
-        ctx.lineTo(point.x + 6, point.y + 6);
+        ctx.moveTo(x, y - size);
+        ctx.lineTo(x - size, y + size);
+        ctx.lineTo(x + size, y + size);
         ctx.closePath();
         ctx.fill();
       }
       
       // Bordure
       ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2 * zoomFactor;
       ctx.stroke();
       
           // Si c'est un point marqué en mode échange, ajouter une icône distinctive
           if (isRallyPoint) {
             ctx.fillStyle = '#fff';
-            ctx.font = 'bold 14px Arial';
+            ctx.font = `bold ${14 * zoomFactor}px Arial`;
             ctx.textAlign = 'center';
-            ctx.fillText('🎯', point.x, point.y + 5);
+            ctx.fillText('🎯', x, y + 5 * zoomFactor);
           } else {
             // Numéro du point normal
             ctx.fillStyle = strokeColor;
-            ctx.font = 'bold 10px Arial';
+            ctx.font = `bold ${10 * zoomFactor}px Arial`;
             ctx.textAlign = 'center';
-            ctx.fillText((index + 1).toString(), point.x, point.y + 3);
+            ctx.fillText((index + 1).toString(), x, y + 3 * zoomFactor);
           }
     });
   };
@@ -222,20 +233,25 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    // Obtenir les coordonnées dans le système du canvas
+    const canvasX = e.clientX - rect.left;
+    const canvasY = e.clientY - rect.top;
+    
+    // Normaliser en coordonnées de base (diviser par zoomFactor)
+    const x = canvasX / zoomFactor;
+    const y = canvasY / zoomFactor;
 
     if (isMarkingScore) {
       // Mode marquage de point final
       // Déterminer quel joueur a marqué le point selon la position
-      const courtX = OUTER_MARGIN;
-      const courtY = OUTER_MARGIN;
-      const centerX = courtX + (COURT_WIDTH / 2);
+      const courtX = BASE_OUTER_MARGIN;
+      const courtY = BASE_OUTER_MARGIN;
+      const centerX = courtX + (BASE_COURT_WIDTH / 2);
       const player = x < centerX ? 2 : 1;
       
       // Déterminer le type de point selon la position
       let pointType: 'normal' | 'out' = 'normal';
-      if (x < courtX || x > courtX + COURT_WIDTH || y < courtY || y > courtY + COURT_HEIGHT) {
+      if (x < courtX || x > courtX + BASE_COURT_WIDTH || y < courtY || y > courtY + BASE_COURT_HEIGHT) {
         pointType = 'out';
       }
       
@@ -259,25 +275,30 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    // Obtenir les coordonnées dans le système du canvas
+    const canvasX = e.clientX - rect.left;
+    const canvasY = e.clientY - rect.top;
+    
+    // Normaliser en coordonnées de base (diviser par zoomFactor)
+    const x = canvasX / zoomFactor;
+    const y = canvasY / zoomFactor;
 
     // Déterminer le type de point selon la position
     let pointType: 'normal' | 'out' = 'normal';
     let player: 1 | 2;
 
     // Vérifier si le clic est dans la zone de sortie (en dehors du terrain)
-    const courtX = OUTER_MARGIN;
-    const courtY = OUTER_MARGIN;
+    const courtX = BASE_OUTER_MARGIN;
+    const courtY = BASE_OUTER_MARGIN;
     
-    if (x < courtX || x > courtX + COURT_WIDTH || y < courtY || y > courtY + COURT_HEIGHT) {
+    if (x < courtX || x > courtX + BASE_COURT_WIDTH || y < courtY || y > courtY + BASE_COURT_HEIGHT) {
       pointType = 'out';
     }
 
     // Déterminer quel joueur a marqué le point selon la position
     // Si clic sur la moitié gauche (ou zone de sortie gauche), c'est le joueur 2
     // Si clic sur la moitié droite (ou zone de sortie droite), c'est le joueur 1
-    const centerX = courtX + (COURT_WIDTH / 2);
+    const centerX = courtX + (BASE_COURT_WIDTH / 2);
     player = x < centerX ? 2 : 1;
     
     onScoreUpdate(court.id, player, 1, x, y, pointType);
