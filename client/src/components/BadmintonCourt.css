@@ -191,6 +191,12 @@
   background: #f8f9fa;
   display: block;
   margin: 0 auto;
+  /* Empêcher le redimensionnement automatique qui cause des problèmes de coordonnées */
+  max-width: 100%;
+  height: auto;
+  /* S'assurer que le canvas garde ses proportions */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 .court-canvas.interactive {
@@ -535,10 +541,12 @@
   }
   
   .court-canvas {
-    width: 100%;
-    height: auto;
+    width: 100% !important;
+    height: auto !important;
     touch-action: none; /* Améliore l'interaction tactile */
     cursor: pointer;
+    /* S'assurer que le canvas garde ses proportions exactes */
+    object-fit: contain;
   }
   
   .court-content {

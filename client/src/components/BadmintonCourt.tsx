@@ -231,13 +231,28 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return null;
 
+    // Pour les événements souris, utiliser offsetX/offsetY si disponibles (plus précis)
+    if ('offsetX' in e && typeof e.offsetX === 'number' && 'offsetY' in e && typeof e.offsetY === 'number' && !('touches' in e)) {
+      // offsetX/offsetY sont déjà relatifs au canvas, mais peuvent être affectés par le scaling CSS
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return {
+        x: (e.offsetX * scaleX) / zoomFactor,
+        y: (e.offsetY * scaleY) / zoomFactor
+      };
+    }
+
+    // Pour les événements tactiles ou si offsetX/offsetY ne sont pas disponibles
     const rect = canvas.getBoundingClientRect();
     let clientX: number, clientY: number;
 
     if ('touches' in e && e.touches.length > 0) {
-      // Événement tactile
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
+      // Événement tactile - utiliser changedTouches pour plus de précision
+      const touch = e.touches[0] || (e.changedTouches && e.changedTouches[0]);
+      if (!touch) return null;
+      clientX = touch.clientX;
+      clientY = touch.clientY;
     } else if ('clientX' in e) {
       // Événement souris
       clientX = e.clientX;
@@ -247,11 +262,12 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     }
 
     // Calculer le ratio entre la taille réelle du canvas et sa taille affichée
-    // Important pour corriger le décalage sur mobile
+    // C'est crucial pour corriger le décalage sur mobile
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
 
-    // Obtenir les coordonnées relatives au canvas affiché
+    // Obtenir les coordonnées relatives au canvas
+    // Utiliser getBoundingClientRect() qui donne la position réelle à l'écran
     const canvasX = (clientX - rect.left) * scaleX;
     const canvasY = (clientY - rect.top) * scaleY;
     
@@ -293,13 +309,37 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
   };
 
   const handleCanvasTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    // Utiliser onTouchEnd uniquement pour éviter les doubles événements
+    if (e.type === 'touchstart') {
+      e.preventDefault(); // Empêcher le défilement
+      return;
+    }
+    
     e.preventDefault(); // Empêcher le défilement
     if (court.mode !== 'rally') return;
 
-    const coords = getCanvasCoordinates(e);
-    if (!coords) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const { x, y } = coords;
+    // Utiliser changedTouches qui est plus fiable pour les événements tactiles
+    const touch = e.changedTouches[0] || e.touches[0];
+    if (!touch) return;
+
+    const rect = canvas.getBoundingClientRect();
+    
+    // Calculer le scaling - utiliser les dimensions CSS calculées
+    // Sur mobile, le canvas peut être redimensionné par CSS
+    // getBoundingClientRect() donne la taille affichée réelle
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    // Obtenir les coordonnées - clientX/clientY sont relatifs au viewport (comme getBoundingClientRect)
+    const canvasX = (touch.clientX - rect.left) * scaleX;
+    const canvasY = (touch.clientY - rect.top) * scaleY;
+    
+    // Normaliser en coordonnées de base
+    const x = canvasX / zoomFactor;
+    const y = canvasY / zoomFactor;
 
     if (isMarkingScore) {
       // Mode marquage de point final
@@ -356,13 +396,37 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
   };
 
   const handleCourtTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    // Utiliser onTouchEnd uniquement pour éviter les doubles événements
+    if (e.type === 'touchstart') {
+      e.preventDefault(); // Empêcher le défilement
+      return;
+    }
+    
     e.preventDefault(); // Empêcher le défilement
     if (court.mode !== 'scoring') return;
 
-    const coords = getCanvasCoordinates(e);
-    if (!coords) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const { x, y } = coords;
+    // Utiliser changedTouches qui est plus fiable pour les événements tactiles
+    const touch = e.changedTouches[0] || e.touches[0];
+    if (!touch) return;
+
+    const rect = canvas.getBoundingClientRect();
+    
+    // Calculer le scaling - utiliser les dimensions CSS calculées
+    // Sur mobile, le canvas peut être redimensionné par CSS
+    // getBoundingClientRect() donne la taille affichée réelle
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    // Obtenir les coordonnées - clientX/clientY sont relatifs au viewport (comme getBoundingClientRect)
+    const canvasX = (touch.clientX - rect.left) * scaleX;
+    const canvasY = (touch.clientY - rect.top) * scaleY;
+    
+    // Normaliser en coordonnées de base
+    const x = canvasX / zoomFactor;
+    const y = canvasY / zoomFactor;
 
     let pointType: 'normal' | 'out' = 'normal';
     let player: 1 | 2;
@@ -483,6 +547,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
                 height={COURT_HEIGHT + (OUTER_MARGIN * 2)}
                 onClick={handleCourtClick}
                 onTouchStart={handleCourtTouch}
+                onTouchEnd={handleCourtTouch}
                 className="court-canvas interactive"
               />
               <p className="court-instructions">
@@ -538,6 +603,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
               height={COURT_HEIGHT + (OUTER_MARGIN * 2)}
               onClick={handleCanvasClick}
               onTouchStart={handleCanvasTouch}
+              onTouchEnd={handleCanvasTouch}
               className="court-canvas"
             />
             
