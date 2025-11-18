@@ -469,36 +469,170 @@
   .court-header {
     flex-direction: column;
     gap: 1rem;
+    padding: 1rem 0.8rem;
+  }
+  
+  .court-header h3 {
+    font-size: 1.1rem;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    gap: 0.8rem;
+    width: 100%;
+  }
+  
+  .mode-selector {
+    width: 100%;
+    justify-content: stretch;
+  }
+  
+  .mode-btn {
+    flex: 1;
+    padding: 0.8rem 1rem;
+    font-size: 1rem;
+    min-height: 44px; /* Taille minimale pour le tactile */
+  }
+  
+  .zoom-btn {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    font-size: 1rem;
+    min-height: 44px;
   }
   
   .players {
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.5rem;
+    max-width: 100%;
+  }
+  
+  .player-name {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+  
+  .score {
+    font-size: 2.5rem;
   }
   
   .vs {
     margin: 0;
+    font-size: 1.8rem;
+  }
+  
+  .score-buttons {
+    gap: 0.5rem;
+    margin-bottom: 0.8rem;
+  }
+  
+  .score-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+    min-width: 50px;
+    min-height: 50px;
   }
   
   .court-canvas {
     width: 100%;
     height: auto;
+    touch-action: none; /* Améliore l'interaction tactile */
+    cursor: pointer;
   }
   
-  .rally-point-buttons {
+  .court-content {
+    padding: 1rem 0.5rem;
+  }
+  
+  .scoring-mode {
+    padding: 0.5rem;
+  }
+  
+  .interactive-court {
+    margin-top: 1rem;
+  }
+  
+  .court-instructions {
+    font-size: 0.85rem;
+    padding: 0.6rem;
+    margin-top: 0.8rem;
+  }
+  
+  .point-legend {
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0.6rem;
+    margin-top: 0.8rem;
+  }
+  
+  .rally-mode {
+    padding: 0.5rem;
+  }
+  
+  .rally-controls {
+    padding: 1rem 0.8rem;
+    margin-bottom: 1rem;
+  }
+  
+  .rally-score-display {
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
   }
   
-  .rally-score-btn {
-    min-width: auto;
+  .rally-player {
     width: 100%;
+  }
+  
+  .rally-player .player-name {
+    font-size: 1rem;
+  }
+  
+  .rally-player .score {
+    font-size: 2rem;
+  }
+  
+  .rally-marking-controls {
+    margin-top: 1rem;
   }
   
   .mark-score-btn {
     min-width: auto;
     width: 100%;
-    padding: 0.7rem 1rem;
-    font-size: 0.9rem;
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+    min-height: 50px;
+  }
+  
+  .rally-instructions {
+    font-size: 0.85rem;
+    padding: 0.8rem;
+    margin-top: 1rem;
+    line-height: 1.6;
+  }
+  
+  .court-actions {
+    padding: 1rem;
+  }
+  
+  .reset-btn {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    min-height: 50px;
+    width: 100%;
+  }
+  
+  .rally-point-buttons {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  
+  .rally-score-btn {
+    min-width: auto;
+    width: 100%;
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+    min-height: 50px;
   }
 }

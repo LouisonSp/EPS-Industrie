@@ -226,20 +226,43 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     });
   };
 
+  // Fonction utilitaire pour obtenir les coordonnées depuis un événement (souris ou tactile)
+  const getCanvasCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+
+    const rect = canvas.getBoundingClientRect();
+    let clientX: number, clientY: number;
+
+    if ('touches' in e && e.touches.length > 0) {
+      // Événement tactile
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else if ('clientX' in e) {
+      // Événement souris
+      clientX = e.clientX;
+      clientY = e.clientY;
+    } else {
+      return null;
+    }
+
+    const canvasX = clientX - rect.left;
+    const canvasY = clientY - rect.top;
+    
+    // Normaliser en coordonnées de base (diviser par zoomFactor)
+    return {
+      x: canvasX / zoomFactor,
+      y: canvasY / zoomFactor
+    };
+  };
+
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (court.mode !== 'rally') return;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const coords = getCanvasCoordinates(e);
+    if (!coords) return;
 
-    const rect = canvas.getBoundingClientRect();
-    // Obtenir les coordonnées dans le système du canvas
-    const canvasX = e.clientX - rect.left;
-    const canvasY = e.clientY - rect.top;
-    
-    // Normaliser en coordonnées de base (diviser par zoomFactor)
-    const x = canvasX / zoomFactor;
-    const y = canvasY / zoomFactor;
+    const { x, y } = coords;
 
     if (isMarkingScore) {
       // Mode marquage de point final
@@ -263,6 +286,35 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     }
   };
 
+  const handleCanvasTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault(); // Empêcher le défilement
+    if (court.mode !== 'rally') return;
+
+    const coords = getCanvasCoordinates(e);
+    if (!coords) return;
+
+    const { x, y } = coords;
+
+    if (isMarkingScore) {
+      // Mode marquage de point final
+      const courtX = BASE_OUTER_MARGIN;
+      const courtY = BASE_OUTER_MARGIN;
+      const centerX = courtX + (BASE_COURT_WIDTH / 2);
+      const player = x < centerX ? 2 : 1;
+      
+      let pointType: 'normal' | 'out' = 'normal';
+      if (x < courtX || x > courtX + BASE_COURT_WIDTH || y < courtY || y > courtY + BASE_COURT_HEIGHT) {
+        pointType = 'out';
+      }
+      
+      onScoreUpdate(court.id, player, 1, x, y, pointType);
+      setIsMarkingScore(false);
+    } else {
+      // Mode normal = ajouter un point de trajectoire
+      onRallyPointAdd(court.id, x, y);
+    }
+  };
+
   const handleScoreClick = (player: 1 | 2, type: 'normal' | 'net' | 'out' = 'normal') => {
     if (court.mode !== 'scoring') return;
     onScoreUpdate(court.id, player, 1, undefined, undefined, type);
@@ -271,17 +323,10 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
   const handleCourtClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (court.mode !== 'scoring') return;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const coords = getCanvasCoordinates(e);
+    if (!coords) return;
 
-    const rect = canvas.getBoundingClientRect();
-    // Obtenir les coordonnées dans le système du canvas
-    const canvasX = e.clientX - rect.left;
-    const canvasY = e.clientY - rect.top;
-    
-    // Normaliser en coordonnées de base (diviser par zoomFactor)
-    const x = canvasX / zoomFactor;
-    const y = canvasY / zoomFactor;
+    const { x, y } = coords;
 
     // Déterminer le type de point selon la position
     let pointType: 'normal' | 'out' = 'normal';
@@ -298,6 +343,31 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     // Déterminer quel joueur a marqué le point selon la position
     // Si clic sur la moitié gauche (ou zone de sortie gauche), c'est le joueur 2
     // Si clic sur la moitié droite (ou zone de sortie droite), c'est le joueur 1
+    const centerX = courtX + (BASE_COURT_WIDTH / 2);
+    player = x < centerX ? 2 : 1;
+    
+    onScoreUpdate(court.id, player, 1, x, y, pointType);
+  };
+
+  const handleCourtTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault(); // Empêcher le défilement
+    if (court.mode !== 'scoring') return;
+
+    const coords = getCanvasCoordinates(e);
+    if (!coords) return;
+
+    const { x, y } = coords;
+
+    let pointType: 'normal' | 'out' = 'normal';
+    let player: 1 | 2;
+
+    const courtX = BASE_OUTER_MARGIN;
+    const courtY = BASE_OUTER_MARGIN;
+    
+    if (x < courtX || x > courtX + BASE_COURT_WIDTH || y < courtY || y > courtY + BASE_COURT_HEIGHT) {
+      pointType = 'out';
+    }
+
     const centerX = courtX + (BASE_COURT_WIDTH / 2);
     player = x < centerX ? 2 : 1;
     
@@ -406,6 +476,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
                 width={COURT_WIDTH + (OUTER_MARGIN * 2)}
                 height={COURT_HEIGHT + (OUTER_MARGIN * 2)}
                 onClick={handleCourtClick}
+                onTouchStart={handleCourtTouch}
                 className="court-canvas interactive"
               />
               <p className="court-instructions">
@@ -460,6 +531,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
               width={COURT_WIDTH + (OUTER_MARGIN * 2)}
               height={COURT_HEIGHT + (OUTER_MARGIN * 2)}
               onClick={handleCanvasClick}
+              onTouchStart={handleCanvasTouch}
               className="court-canvas"
             />
             
