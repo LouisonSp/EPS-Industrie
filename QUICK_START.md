@@ -74,3 +74,4 @@ Après le déploiement, testez :
 4. Rejoindre la salle avec la même clé
 5. Vérifier que les modifications sont synchronisées en temps réel
 
+

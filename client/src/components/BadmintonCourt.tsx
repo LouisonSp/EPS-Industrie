@@ -292,13 +292,21 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
       const courtX = BASE_OUTER_MARGIN;
       const courtY = BASE_OUTER_MARGIN;
       const centerX = courtX + (BASE_COURT_WIDTH / 2);
-      const player = x < centerX ? 2 : 1;
+      const clickedPlayer = x < centerX ? 2 : 1;
       
       // Déterminer le type de point selon la position
       let pointType: 'normal' | 'out' = 'normal';
       if (x < courtX || x > courtX + BASE_COURT_WIDTH || y < courtY || y > courtY + BASE_COURT_HEIGHT) {
         pointType = 'out';
       }
+      
+      // Pour les points sortis, inverser la logique :
+      // - Sortie à gauche = erreur du joueur B (2), donc point au joueur A (1)
+      // - Sortie à droite = erreur du joueur A (1), donc point au joueur B (2)
+      // Pour les points normaux, garder la logique normale
+      const player = pointType === 'out' 
+        ? (clickedPlayer === 1 ? 2 : 1) // Inverser pour les sorties
+        : clickedPlayer; // Normal pour les points intérieurs
       
       onScoreUpdate(court.id, player, 1, x, y, pointType);
       setIsMarkingScore(false); // Désactiver le mode marquage
@@ -346,12 +354,20 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
       const courtX = BASE_OUTER_MARGIN;
       const courtY = BASE_OUTER_MARGIN;
       const centerX = courtX + (BASE_COURT_WIDTH / 2);
-      const player = x < centerX ? 2 : 1;
+      const clickedPlayer = x < centerX ? 2 : 1;
       
       let pointType: 'normal' | 'out' = 'normal';
       if (x < courtX || x > courtX + BASE_COURT_WIDTH || y < courtY || y > courtY + BASE_COURT_HEIGHT) {
         pointType = 'out';
       }
+      
+      // Pour les points sortis, inverser la logique :
+      // - Sortie à gauche = erreur du joueur B (2), donc point au joueur A (1)
+      // - Sortie à droite = erreur du joueur A (1), donc point au joueur B (2)
+      // Pour les points normaux, garder la logique normale
+      const player = pointType === 'out' 
+        ? (clickedPlayer === 1 ? 2 : 1) // Inverser pour les sorties
+        : clickedPlayer; // Normal pour les points intérieurs
       
       onScoreUpdate(court.id, player, 1, x, y, pointType);
       setIsMarkingScore(false);
@@ -387,10 +403,18 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     }
 
     // Déterminer quel joueur a marqué le point selon la position
-    // Si clic sur la moitié gauche (ou zone de sortie gauche), c'est le joueur 2
-    // Si clic sur la moitié droite (ou zone de sortie droite), c'est le joueur 1
     const centerX = courtX + (BASE_COURT_WIDTH / 2);
-    player = x < centerX ? 2 : 1;
+    const clickedPlayer = x < centerX ? 2 : 1;
+    
+    // Pour les points sortis, inverser la logique :
+    // - Sortie à gauche = erreur du joueur B (2), donc point au joueur A (1)
+    // - Sortie à droite = erreur du joueur A (1), donc point au joueur B (2)
+    // Pour les points normaux, garder la logique normale
+    if (pointType === 'out') {
+      player = clickedPlayer === 1 ? 2 : 1; // Inverser
+    } else {
+      player = clickedPlayer; // Normal
+    }
     
     onScoreUpdate(court.id, player, 1, x, y, pointType);
   };
@@ -439,7 +463,17 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     }
 
     const centerX = courtX + (BASE_COURT_WIDTH / 2);
-    player = x < centerX ? 2 : 1;
+    const clickedPlayer = x < centerX ? 2 : 1;
+    
+    // Pour les points sortis, inverser la logique :
+    // - Sortie à gauche = erreur du joueur B (2), donc point au joueur A (1)
+    // - Sortie à droite = erreur du joueur A (1), donc point au joueur B (2)
+    // Pour les points normaux, garder la logique normale
+    if (pointType === 'out') {
+      player = clickedPlayer === 1 ? 2 : 1; // Inverser
+    } else {
+      player = clickedPlayer; // Normal
+    }
     
     onScoreUpdate(court.id, player, 1, x, y, pointType);
   };
@@ -551,7 +585,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
                 className="court-canvas interactive"
               />
               <p className="court-instructions">
-                Cliquez sur le terrain pour marquer un point normal, ou dans la zone grise pour marquer une sortie (gauche = {court.players[1]}, droite = {court.players[0]})
+                Cliquez sur le terrain pour marquer un point normal, ou dans la zone grise pour marquer une sortie (sortie à gauche = erreur de {court.players[1]} → point à {court.players[0]}, sortie à droite = erreur de {court.players[0]} → point à {court.players[1]})
               </p>
               
               <div className="point-legend">
