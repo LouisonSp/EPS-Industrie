@@ -64,81 +64,138 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     
     ctx.clearRect(0, 0, totalWidth, totalHeight);
     
-    // Couleur de fond de la zone extérieure
-    ctx.fillStyle = '#e8f4f8';
+    // 1. Fond global (Zone de sortie)
+    // Utilisation de la couleur de fond du thème (sombre)
+    ctx.fillStyle = '#0f172a'; // var(--background)
     ctx.fillRect(0, 0, totalWidth, totalHeight);
     
     // Zone du terrain (décalée par la marge)
     const courtX = OUTER_MARGIN;
     const courtY = OUTER_MARGIN;
     
-    // Couleur de fond du terrain
-    ctx.fillStyle = '#f0f8ff';
+    // 2. Fond du terrain (Zone de jeu)
+    // Un peu plus clair que le fond global pour distinguer
+    ctx.fillStyle = '#1e293b'; // var(--surface)
     ctx.fillRect(courtX, courtY, COURT_WIDTH, COURT_HEIGHT);
     
-    // Bordures du terrain
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 2;
+    // Configuration des lignes
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; // Lignes blanches semi-transparentes
+    ctx.lineWidth = 2 * zoomFactor;
+    
+    // Dimensions officielles (proportions)
+    // Longueur totale: 13.40m
+    // Largeur totale: 6.10m
+    // Largeur simple: 5.18m (marge de 0.46m de chaque côté)
+    // Ligne de service court: 1.98m du filet
+    // Ligne de service long double: 0.76m du fond
+    
+    // Calcul des positions en pixels
+    const singleSidelineMargin = (0.46 / 6.10) * COURT_HEIGHT;
+    const shortServiceLineDist = (1.98 / (13.40 / 2)) * (COURT_WIDTH / 2);
+    const doubleLongServiceLineDist = (0.76 / (13.40 / 2)) * (COURT_WIDTH / 2);
+    
+    // --- LIGNES EXTÉRIEURES ---
     ctx.strokeRect(courtX, courtY, COURT_WIDTH, COURT_HEIGHT);
     
-    // Ligne centrale
+    // --- LIGNES DE SIMPLE (Latérales) ---
+    // Haut
     ctx.beginPath();
-    ctx.moveTo(courtX + COURT_WIDTH / 2, courtY);
-    ctx.lineTo(courtX + COURT_WIDTH / 2, courtY + COURT_HEIGHT);
+    ctx.moveTo(courtX, courtY + singleSidelineMargin);
+    ctx.lineTo(courtX + COURT_WIDTH, courtY + singleSidelineMargin);
     ctx.stroke();
     
-    // Zone de service (lignes horizontales)
-    const serviceLineY = COURT_HEIGHT * 0.25;
+    // Bas
     ctx.beginPath();
-    ctx.moveTo(courtX, courtY + serviceLineY);
-    ctx.lineTo(courtX + COURT_WIDTH, courtY + serviceLineY);
-    ctx.moveTo(courtX, courtY + COURT_HEIGHT - serviceLineY);
-    ctx.lineTo(courtX + COURT_WIDTH, courtY + COURT_HEIGHT - serviceLineY);
+    ctx.moveTo(courtX, courtY + COURT_HEIGHT - singleSidelineMargin);
+    ctx.lineTo(courtX + COURT_WIDTH, courtY + COURT_HEIGHT - singleSidelineMargin);
     ctx.stroke();
     
-    // Zone de service (lignes verticales)
-    const serviceLineX = COURT_WIDTH * 0.25;
+    // --- FILET (Centre vertical) ---
+    const netX = courtX + (COURT_WIDTH / 2);
     ctx.beginPath();
-    ctx.moveTo(courtX + serviceLineX, courtY);
-    ctx.lineTo(courtX + serviceLineX, courtY + serviceLineY);
-    ctx.moveTo(courtX + COURT_WIDTH - serviceLineX, courtY);
-    ctx.lineTo(courtX + COURT_WIDTH - serviceLineX, courtY + serviceLineY);
-    ctx.moveTo(courtX + serviceLineX, courtY + COURT_HEIGHT - serviceLineY);
-    ctx.lineTo(courtX + serviceLineX, courtY + COURT_HEIGHT);
-    ctx.moveTo(courtX + COURT_WIDTH - serviceLineX, courtY + COURT_HEIGHT - serviceLineY);
-    ctx.lineTo(courtX + COURT_WIDTH - serviceLineX, courtY + COURT_HEIGHT);
+    ctx.moveTo(netX, courtY);
+    ctx.lineTo(netX, courtY + COURT_HEIGHT);
+    ctx.setLineDash([5, 5]); // Pointillés pour le filet
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+    
+    // --- LIGNES DE SERVICE COURT (Verticales près du filet) ---
+    // Gauche
+    ctx.beginPath();
+    ctx.moveTo(netX - shortServiceLineDist, courtY);
+    ctx.lineTo(netX - shortServiceLineDist, courtY + COURT_HEIGHT);
+    ctx.stroke();
+    
+    // Droite
+    ctx.beginPath();
+    ctx.moveTo(netX + shortServiceLineDist, courtY);
+    ctx.lineTo(netX + shortServiceLineDist, courtY + COURT_HEIGHT);
+    ctx.stroke();
+    
+    // --- LIGNES DE SERVICE LONG DOUBLE (Verticales près du fond) ---
+    // Gauche
+    ctx.beginPath();
+    ctx.moveTo(courtX + doubleLongServiceLineDist, courtY);
+    ctx.lineTo(courtX + doubleLongServiceLineDist, courtY + COURT_HEIGHT);
+    ctx.stroke();
+    
+    // Droite
+    ctx.beginPath();
+    ctx.moveTo(courtX + COURT_WIDTH - doubleLongServiceLineDist, courtY);
+    ctx.lineTo(courtX + COURT_WIDTH - doubleLongServiceLineDist, courtY + COURT_HEIGHT);
+    ctx.stroke();
+    
+    // --- LIGNE MÉDIANE (Horizontale, divise les zones de service) ---
+    // Elle va de la ligne de service court arrière à la ligne de service court avant
+    // Gauche
+    ctx.beginPath();
+    ctx.moveTo(courtX, courtY + (COURT_HEIGHT / 2));
+    ctx.lineTo(netX - shortServiceLineDist, courtY + (COURT_HEIGHT / 2));
+    ctx.stroke();
+    
+    // Droite
+    ctx.beginPath();
+    ctx.moveTo(netX + shortServiceLineDist, courtY + (COURT_HEIGHT / 2));
+    ctx.lineTo(courtX + COURT_WIDTH, courtY + (COURT_HEIGHT / 2));
     ctx.stroke();
     
     // Légende pour la zone extérieure
-    ctx.fillStyle = '#666';
-    ctx.font = '12px Arial';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.5)'; // var(--text-secondary)
+    ctx.font = `${12 * zoomFactor}px Inter, Arial`;
     ctx.textAlign = 'center';
-    ctx.fillText('Zone de sortie', totalWidth / 2, 15);
+    ctx.fillText('Zone de sortie', totalWidth / 2, 20 * zoomFactor);
   };
 
   const drawRallyPoints = (ctx: CanvasRenderingContext2D, points: RallyPoint[]) => {
-    ctx.fillStyle = '#ff4444';
     points.forEach((point, index) => {
       // Convertir les coordonnées de base en coordonnées zoomées
       const x = point.x * zoomFactor;
       const y = point.y * zoomFactor;
       
+      // Point avec effet de lueur
       ctx.beginPath();
       ctx.arc(x, y, 4 * zoomFactor, 0, 2 * Math.PI);
+      ctx.fillStyle = '#f43f5e'; // Rose/Rouge vibrant
+      ctx.shadowColor = 'rgba(244, 63, 94, 0.6)';
+      ctx.shadowBlur = 10;
       ctx.fill();
+      ctx.shadowBlur = 0; // Reset
       
       // Numéro du point
       ctx.fillStyle = '#fff';
-      ctx.font = `${10 * zoomFactor}px Arial`;
+      ctx.font = `bold ${10 * zoomFactor}px Inter, Arial`;
       ctx.textAlign = 'center';
-      ctx.fillText((index + 1).toString(), x, y + 3 * zoomFactor);
-      ctx.fillStyle = '#ff4444';
+      ctx.textBaseline = 'middle';
+      // Dessiner le texte un peu au-dessus pour ne pas chevaucher le point
+      ctx.fillText((index + 1).toString(), x, y - 8 * zoomFactor);
     });
     
-    // Lignes entre les points (grises et fines)
+    // Lignes entre les points
     if (points.length > 1) {
-      ctx.strokeStyle = '#999999';
-      ctx.lineWidth = 1 * zoomFactor;
+      ctx.strokeStyle = 'rgba(244, 63, 94, 0.6)'; // Même couleur que les points mais transparent
+      ctx.lineWidth = 1.5 * zoomFactor;
       ctx.beginPath();
       const firstPoint = points[0];
       ctx.moveTo(firstPoint.x * zoomFactor, firstPoint.y * zoomFactor);
@@ -158,28 +215,27 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
       const size = 6 * zoomFactor;
       
       // Couleur de base selon le joueur
-      const baseColor = point.player === 1 ? '#28a745' : '#dc3545';
+      const baseColor = point.player === 1 ? '#22c55e' : '#ef4444'; // Green / Red
       
       // Couleur et forme selon le type de point
       let fillColor = baseColor;
       let strokeColor = '#fff';
       let shape = 'circle';
-      let isRallyPoint = false; // Pour distinguer les points marqués en mode échange
+      let isRallyPoint = false;
       
-      // Vérifier si c'est un point marqué en mode échange (avec coordonnées)
       if (point.x !== undefined && point.y !== undefined && court.mode === 'rally') {
         isRallyPoint = true;
       }
       
       switch (point.type) {
         case 'net':
-          fillColor = '#ffc107'; // Jaune pour filet
-          strokeColor = '#000';
+          fillColor = '#fbbf24'; // Amber/Yellow
+          strokeColor = '#fff';
           shape = 'square';
           break;
         case 'out':
-          fillColor = '#6c757d'; // Gris pour sortie
-          strokeColor = '#fff';
+          fillColor = '#94a3b8'; // Slate/Grey
+          strokeColor = '#ef4444'; // Bordure rouge pour signaler la faute
           shape = 'triangle';
           break;
         default: // normal
@@ -189,13 +245,23 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
       }
       
       ctx.fillStyle = fillColor;
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 2 * zoomFactor;
+      
+      // Effet de lueur pour les points
+      ctx.shadowColor = fillColor;
+      ctx.shadowBlur = 8;
       
       if (shape === 'circle') {
         ctx.beginPath();
         ctx.arc(x, y, size, 0, 2 * Math.PI);
         ctx.fill();
+        ctx.stroke();
       } else if (shape === 'square') {
-        ctx.fillRect(x - size, y - size, size * 2, size * 2);
+        ctx.beginPath();
+        ctx.rect(x - size, y - size, size * 2, size * 2);
+        ctx.fill();
+        ctx.stroke();
       } else if (shape === 'triangle') {
         ctx.beginPath();
         ctx.moveTo(x, y - size);
@@ -203,26 +269,28 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
         ctx.lineTo(x + size, y + size);
         ctx.closePath();
         ctx.fill();
+        ctx.stroke();
       }
       
-      // Bordure
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = 2 * zoomFactor;
-      ctx.stroke();
+      ctx.shadowBlur = 0; // Reset
       
-          // Si c'est un point marqué en mode échange, ajouter une icône distinctive
-          if (isRallyPoint) {
-            ctx.fillStyle = '#fff';
-            ctx.font = `bold ${14 * zoomFactor}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.fillText('🎯', x, y + 5 * zoomFactor);
-          } else {
-            // Numéro du point normal
-            ctx.fillStyle = strokeColor;
-            ctx.font = `bold ${10 * zoomFactor}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.fillText((index + 1).toString(), x, y + 3 * zoomFactor);
-          }
+      if (isRallyPoint) {
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${14 * zoomFactor}px Inter, Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🎯', x, y - 12 * zoomFactor);
+      } else {
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${10 * zoomFactor}px Inter, Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        // Ombre portée pour le texte pour lisibilité
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 4;
+        ctx.fillText((index + 1).toString(), x, y);
+        ctx.shadowBlur = 0;
+      }
     });
   };
 
