@@ -94,11 +94,12 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     const doubleLongServiceLineDist = (0.76 / (13.40 / 2)) * (COURT_WIDTH / 2);
 
     // --- LIGNES EXTÉRIEURES (Pointillés autour du terrain) ---
-    ctx.save();
-    ctx.setLineDash([5 * zoomFactor, 5 * zoomFactor]);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.strokeRect(courtX - 10 * zoomFactor, courtY - 10 * zoomFactor, COURT_WIDTH + 20 * zoomFactor, COURT_HEIGHT + 20 * zoomFactor);
-    ctx.restore();
+    // Supprimé à la demande de l'utilisateur pour l'esthétique
+    // ctx.save();
+    // ctx.setLineDash([5 * zoomFactor, 5 * zoomFactor]);
+    // ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    // ctx.strokeRect(courtX - 10 * zoomFactor, courtY - 10 * zoomFactor, COURT_WIDTH + 20 * zoomFactor, COURT_HEIGHT + 20 * zoomFactor);
+    // ctx.restore();
 
     // --- CONTOUR DU TERRAIN ---
     ctx.strokeRect(courtX, courtY, COURT_WIDTH, COURT_HEIGHT);
