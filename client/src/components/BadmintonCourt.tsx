@@ -29,10 +29,11 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
 
   // Dimensions du terrain (proportions réelles d'un terrain de badminton)
   // En mode zoom, on agrandit le terrain
-  const BASE_COURT_WIDTH = 400;
+  // Ratio officiel: 13.4m / 6.1m = ~2.2
   const BASE_COURT_HEIGHT = 200;
+  const BASE_COURT_WIDTH = BASE_COURT_HEIGHT * (13.4 / 6.1); // ~440px
   const BASE_OUTER_MARGIN = 40;
-  
+
   const zoomFactor = isZoomed ? 2.5 : 1;
   const COURT_WIDTH = BASE_COURT_WIDTH * zoomFactor;
   const COURT_HEIGHT = BASE_COURT_HEIGHT * zoomFactor;
@@ -47,7 +48,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
 
     // Dessiner le terrain
     drawCourt(ctx);
-    
+
     // Dessiner les points d'échange ou de score
     if (court.mode === 'rally') {
       drawRallyPoints(ctx, court.rallyPoints);
@@ -56,111 +57,131 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     } else {
       drawScorePoints(ctx, court.scorePoints);
     }
-  }, [court.rallyPoints, court.scorePoints, court.mode]);
+  }, [court.rallyPoints, court.scorePoints, court.mode, isZoomed]);
 
   const drawCourt = (ctx: CanvasRenderingContext2D) => {
     const totalWidth = COURT_WIDTH + (OUTER_MARGIN * 2);
     const totalHeight = COURT_HEIGHT + (OUTER_MARGIN * 2);
-    
+
     ctx.clearRect(0, 0, totalWidth, totalHeight);
-    
+
     // 1. Fond global (Zone de sortie)
-    // Utilisation de la couleur de fond du thème (sombre)
     ctx.fillStyle = '#0f172a'; // var(--background)
     ctx.fillRect(0, 0, totalWidth, totalHeight);
-    
+
     // Zone du terrain (décalée par la marge)
     const courtX = OUTER_MARGIN;
     const courtY = OUTER_MARGIN;
-    
+
     // 2. Fond du terrain (Zone de jeu)
-    // Un peu plus clair que le fond global pour distinguer
     ctx.fillStyle = '#1e293b'; // var(--surface)
     ctx.fillRect(courtX, courtY, COURT_WIDTH, COURT_HEIGHT);
-    
+
     // Configuration des lignes
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; // Lignes blanches semi-transparentes
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
     ctx.lineWidth = 2 * zoomFactor;
-    
+
     // Dimensions officielles (proportions)
     // Longueur totale: 13.40m
     // Largeur totale: 6.10m
     // Largeur simple: 5.18m (marge de 0.46m de chaque côté)
     // Ligne de service court: 1.98m du filet
     // Ligne de service long double: 0.76m du fond
-    
+
     // Calcul des positions en pixels
     const singleSidelineMargin = (0.46 / 6.10) * COURT_HEIGHT;
     const shortServiceLineDist = (1.98 / (13.40 / 2)) * (COURT_WIDTH / 2);
     const doubleLongServiceLineDist = (0.76 / (13.40 / 2)) * (COURT_WIDTH / 2);
-    
-    // --- LIGNES EXTÉRIEURES ---
+
+    // --- LIGNES EXTÉRIEURES (Pointillés autour du terrain) ---
+    ctx.save();
+    ctx.setLineDash([5 * zoomFactor, 5 * zoomFactor]);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.strokeRect(courtX - 10 * zoomFactor, courtY - 10 * zoomFactor, COURT_WIDTH + 20 * zoomFactor, COURT_HEIGHT + 20 * zoomFactor);
+    ctx.restore();
+
+    // --- CONTOUR DU TERRAIN ---
     ctx.strokeRect(courtX, courtY, COURT_WIDTH, COURT_HEIGHT);
-    
+
     // --- LIGNES DE SIMPLE (Latérales) ---
     // Haut
     ctx.beginPath();
     ctx.moveTo(courtX, courtY + singleSidelineMargin);
     ctx.lineTo(courtX + COURT_WIDTH, courtY + singleSidelineMargin);
     ctx.stroke();
-    
+
     // Bas
     ctx.beginPath();
     ctx.moveTo(courtX, courtY + COURT_HEIGHT - singleSidelineMargin);
     ctx.lineTo(courtX + COURT_WIDTH, courtY + COURT_HEIGHT - singleSidelineMargin);
     ctx.stroke();
-    
-    // --- FILET (Centre vertical) ---
+
+    // --- FILET (Centre vertical avec poteaux) ---
     const netX = courtX + (COURT_WIDTH / 2);
+
+    // Poteaux (cercles aux extrémités)
+    const poleRadius = 3 * zoomFactor;
+    ctx.fillStyle = '#fff';
+
+    // Poteau haut
     ctx.beginPath();
-    ctx.moveTo(netX, courtY);
-    ctx.lineTo(netX, courtY + COURT_HEIGHT);
-    ctx.setLineDash([5, 5]); // Pointillés pour le filet
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.arc(netX, courtY - 10 * zoomFactor, poleRadius, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Poteau bas
+    ctx.beginPath();
+    ctx.arc(netX, courtY + COURT_HEIGHT + 10 * zoomFactor, poleRadius, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Ligne du filet (dépassant un peu)
+    ctx.beginPath();
+    ctx.moveTo(netX, courtY - 10 * zoomFactor);
+    ctx.lineTo(netX, courtY + COURT_HEIGHT + 10 * zoomFactor);
+    ctx.save();
+    // ctx.setLineDash([5, 5]); // Le filet est souvent représenté par une ligne pleine fine ou pointillés
+    ctx.lineWidth = 1 * zoomFactor;
     ctx.stroke();
-    ctx.setLineDash([]); // Reset
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-    
+    ctx.restore();
+
     // --- LIGNES DE SERVICE COURT (Verticales près du filet) ---
     // Gauche
     ctx.beginPath();
     ctx.moveTo(netX - shortServiceLineDist, courtY);
     ctx.lineTo(netX - shortServiceLineDist, courtY + COURT_HEIGHT);
     ctx.stroke();
-    
+
     // Droite
     ctx.beginPath();
     ctx.moveTo(netX + shortServiceLineDist, courtY);
     ctx.lineTo(netX + shortServiceLineDist, courtY + COURT_HEIGHT);
     ctx.stroke();
-    
+
     // --- LIGNES DE SERVICE LONG DOUBLE (Verticales près du fond) ---
     // Gauche
     ctx.beginPath();
     ctx.moveTo(courtX + doubleLongServiceLineDist, courtY);
     ctx.lineTo(courtX + doubleLongServiceLineDist, courtY + COURT_HEIGHT);
     ctx.stroke();
-    
+
     // Droite
     ctx.beginPath();
     ctx.moveTo(courtX + COURT_WIDTH - doubleLongServiceLineDist, courtY);
     ctx.lineTo(courtX + COURT_WIDTH - doubleLongServiceLineDist, courtY + COURT_HEIGHT);
     ctx.stroke();
-    
+
     // --- LIGNE MÉDIANE (Horizontale, divise les zones de service) ---
-    // Elle va de la ligne de service court arrière à la ligne de service court avant
     // Gauche
     ctx.beginPath();
     ctx.moveTo(courtX, courtY + (COURT_HEIGHT / 2));
     ctx.lineTo(netX - shortServiceLineDist, courtY + (COURT_HEIGHT / 2));
     ctx.stroke();
-    
+
     // Droite
     ctx.beginPath();
     ctx.moveTo(netX + shortServiceLineDist, courtY + (COURT_HEIGHT / 2));
     ctx.lineTo(courtX + COURT_WIDTH, courtY + (COURT_HEIGHT / 2));
     ctx.stroke();
-    
+
     // Légende pour la zone extérieure
     ctx.fillStyle = 'rgba(148, 163, 184, 0.5)'; // var(--text-secondary)
     ctx.font = `${12 * zoomFactor}px Inter, Arial`;
@@ -173,7 +194,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
       // Convertir les coordonnées de base en coordonnées zoomées
       const x = point.x * zoomFactor;
       const y = point.y * zoomFactor;
-      
+
       // Point avec effet de lueur
       ctx.beginPath();
       ctx.arc(x, y, 4 * zoomFactor, 0, 2 * Math.PI);
@@ -182,7 +203,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
       ctx.shadowBlur = 10;
       ctx.fill();
       ctx.shadowBlur = 0; // Reset
-      
+
       // Numéro du point
       ctx.fillStyle = '#fff';
       ctx.font = `bold ${10 * zoomFactor}px Inter, Arial`;
@@ -191,7 +212,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
       // Dessiner le texte un peu au-dessus pour ne pas chevaucher le point
       ctx.fillText((index + 1).toString(), x, y - 8 * zoomFactor);
     });
-    
+
     // Lignes entre les points
     if (points.length > 1) {
       ctx.strokeStyle = 'rgba(244, 63, 94, 0.6)'; // Même couleur que les points mais transparent
@@ -213,20 +234,20 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
       const x = point.x * zoomFactor;
       const y = point.y * zoomFactor;
       const size = 6 * zoomFactor;
-      
+
       // Couleur de base selon le joueur
       const baseColor = point.player === 1 ? '#22c55e' : '#ef4444'; // Green / Red
-      
+
       // Couleur et forme selon le type de point
       let fillColor = baseColor;
       let strokeColor = '#fff';
       let shape = 'circle';
       let isRallyPoint = false;
-      
+
       if (point.x !== undefined && point.y !== undefined && court.mode === 'rally') {
         isRallyPoint = true;
       }
-      
+
       switch (point.type) {
         case 'net':
           fillColor = '#fbbf24'; // Amber/Yellow
@@ -243,15 +264,15 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
           strokeColor = '#fff';
           shape = 'circle';
       }
-      
+
       ctx.fillStyle = fillColor;
       ctx.strokeStyle = strokeColor;
       ctx.lineWidth = 2 * zoomFactor;
-      
+
       // Effet de lueur pour les points
       ctx.shadowColor = fillColor;
       ctx.shadowBlur = 8;
-      
+
       if (shape === 'circle') {
         ctx.beginPath();
         ctx.arc(x, y, size, 0, 2 * Math.PI);
@@ -271,9 +292,9 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
         ctx.fill();
         ctx.stroke();
       }
-      
+
       ctx.shadowBlur = 0; // Reset
-      
+
       if (isRallyPoint) {
         ctx.fillStyle = '#fff';
         ctx.font = `bold ${14 * zoomFactor}px Inter, Arial`;
@@ -338,7 +359,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     // Utiliser getBoundingClientRect() qui donne la position réelle à l'écran
     const canvasX = (clientX - rect.left) * scaleX;
     const canvasY = (clientY - rect.top) * scaleY;
-    
+
     // Normaliser en coordonnées de base (diviser par zoomFactor)
     return {
       x: canvasX / zoomFactor,
@@ -361,21 +382,21 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
       const courtY = BASE_OUTER_MARGIN;
       const centerX = courtX + (BASE_COURT_WIDTH / 2);
       const clickedPlayer = x < centerX ? 2 : 1;
-      
+
       // Déterminer le type de point selon la position
       let pointType: 'normal' | 'out' = 'normal';
       if (x < courtX || x > courtX + BASE_COURT_WIDTH || y < courtY || y > courtY + BASE_COURT_HEIGHT) {
         pointType = 'out';
       }
-      
+
       // Pour les points sortis, inverser la logique :
       // - Sortie à gauche = erreur du joueur B (2), donc point au joueur A (1)
       // - Sortie à droite = erreur du joueur A (1), donc point au joueur B (2)
       // Pour les points normaux, garder la logique normale
-      const player = pointType === 'out' 
+      const player = pointType === 'out'
         ? (clickedPlayer === 1 ? 2 : 1) // Inverser pour les sorties
         : clickedPlayer; // Normal pour les points intérieurs
-      
+
       onScoreUpdate(court.id, player, 1, x, y, pointType);
       setIsMarkingScore(false); // Désactiver le mode marquage
     } else {
@@ -390,7 +411,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
       e.preventDefault(); // Empêcher le défilement
       return;
     }
-    
+
     e.preventDefault(); // Empêcher le défilement
     if (court.mode !== 'rally') return;
 
@@ -402,17 +423,17 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     if (!touch) return;
 
     const rect = canvas.getBoundingClientRect();
-    
+
     // Calculer le scaling - utiliser les dimensions CSS calculées
     // Sur mobile, le canvas peut être redimensionné par CSS
     // getBoundingClientRect() donne la taille affichée réelle
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    
+
     // Obtenir les coordonnées - clientX/clientY sont relatifs au viewport (comme getBoundingClientRect)
     const canvasX = (touch.clientX - rect.left) * scaleX;
     const canvasY = (touch.clientY - rect.top) * scaleY;
-    
+
     // Normaliser en coordonnées de base
     const x = canvasX / zoomFactor;
     const y = canvasY / zoomFactor;
@@ -423,20 +444,20 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
       const courtY = BASE_OUTER_MARGIN;
       const centerX = courtX + (BASE_COURT_WIDTH / 2);
       const clickedPlayer = x < centerX ? 2 : 1;
-      
+
       let pointType: 'normal' | 'out' = 'normal';
       if (x < courtX || x > courtX + BASE_COURT_WIDTH || y < courtY || y > courtY + BASE_COURT_HEIGHT) {
         pointType = 'out';
       }
-      
+
       // Pour les points sortis, inverser la logique :
       // - Sortie à gauche = erreur du joueur B (2), donc point au joueur A (1)
       // - Sortie à droite = erreur du joueur A (1), donc point au joueur B (2)
       // Pour les points normaux, garder la logique normale
-      const player = pointType === 'out' 
+      const player = pointType === 'out'
         ? (clickedPlayer === 1 ? 2 : 1) // Inverser pour les sorties
         : clickedPlayer; // Normal pour les points intérieurs
-      
+
       onScoreUpdate(court.id, player, 1, x, y, pointType);
       setIsMarkingScore(false);
     } else {
@@ -465,7 +486,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     // Vérifier si le clic est dans la zone de sortie (en dehors du terrain)
     const courtX = BASE_OUTER_MARGIN;
     const courtY = BASE_OUTER_MARGIN;
-    
+
     if (x < courtX || x > courtX + BASE_COURT_WIDTH || y < courtY || y > courtY + BASE_COURT_HEIGHT) {
       pointType = 'out';
     }
@@ -473,7 +494,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     // Déterminer quel joueur a marqué le point selon la position
     const centerX = courtX + (BASE_COURT_WIDTH / 2);
     const clickedPlayer = x < centerX ? 2 : 1;
-    
+
     // Pour les points sortis, inverser la logique :
     // - Sortie à gauche = erreur du joueur B (2), donc point au joueur A (1)
     // - Sortie à droite = erreur du joueur A (1), donc point au joueur B (2)
@@ -483,7 +504,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     } else {
       player = clickedPlayer; // Normal
     }
-    
+
     onScoreUpdate(court.id, player, 1, x, y, pointType);
   };
 
@@ -493,7 +514,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
       e.preventDefault(); // Empêcher le défilement
       return;
     }
-    
+
     e.preventDefault(); // Empêcher le défilement
     if (court.mode !== 'scoring') return;
 
@@ -505,17 +526,17 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     if (!touch) return;
 
     const rect = canvas.getBoundingClientRect();
-    
+
     // Calculer le scaling - utiliser les dimensions CSS calculées
     // Sur mobile, le canvas peut être redimensionné par CSS
     // getBoundingClientRect() donne la taille affichée réelle
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    
+
     // Obtenir les coordonnées - clientX/clientY sont relatifs au viewport (comme getBoundingClientRect)
     const canvasX = (touch.clientX - rect.left) * scaleX;
     const canvasY = (touch.clientY - rect.top) * scaleY;
-    
+
     // Normaliser en coordonnées de base
     const x = canvasX / zoomFactor;
     const y = canvasY / zoomFactor;
@@ -525,14 +546,14 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
 
     const courtX = BASE_OUTER_MARGIN;
     const courtY = BASE_OUTER_MARGIN;
-    
+
     if (x < courtX || x > courtX + BASE_COURT_WIDTH || y < courtY || y > courtY + BASE_COURT_HEIGHT) {
       pointType = 'out';
     }
 
     const centerX = courtX + (BASE_COURT_WIDTH / 2);
     const clickedPlayer = x < centerX ? 2 : 1;
-    
+
     // Pour les points sortis, inverser la logique :
     // - Sortie à gauche = erreur du joueur B (2), donc point au joueur A (1)
     // - Sortie à droite = erreur du joueur A (1), donc point au joueur B (2)
@@ -542,7 +563,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     } else {
       player = clickedPlayer; // Normal
     }
-    
+
     onScoreUpdate(court.id, player, 1, x, y, pointType);
   };
 
@@ -585,21 +606,21 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
                 <div className="player-name">{court.players[0]}</div>
                 <div className="score-display">
                   <div className="score-buttons">
-                    <button 
+                    <button
                       className="score-btn normal"
                       onClick={() => handleScoreClick(1, 'normal')}
                       title="Point normal"
                     >
                       +
                     </button>
-                    <button 
+                    <button
                       className="score-btn net"
                       onClick={() => handleScoreClick(1, 'net')}
                       title="Point via filet"
                     >
                       🕸️
                     </button>
-                    <button 
+                    <button
                       className="score-btn out"
                       onClick={() => handleScoreClick(1, 'out')}
                       title="Point sur sortie"
@@ -615,21 +636,21 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
                 <div className="player-name">{court.players[1]}</div>
                 <div className="score-display">
                   <div className="score-buttons">
-                    <button 
+                    <button
                       className="score-btn normal"
                       onClick={() => handleScoreClick(2, 'normal')}
                       title="Point normal"
                     >
                       +
                     </button>
-                    <button 
+                    <button
                       className="score-btn net"
                       onClick={() => handleScoreClick(2, 'net')}
                       title="Point via filet"
                     >
                       🕸️
                     </button>
-                    <button 
+                    <button
                       className="score-btn out"
                       onClick={() => handleScoreClick(2, 'out')}
                       title="Point sur sortie"
@@ -641,7 +662,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
                 </div>
               </div>
             </div>
-            
+
             <div className="interactive-court">
               <canvas
                 ref={canvasRef}
@@ -655,7 +676,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
               <p className="court-instructions">
                 Cliquez sur le terrain pour marquer un point normal, ou dans la zone grise pour marquer une sortie (sortie à gauche = erreur de {court.players[1]} → point à {court.players[0]}, sortie à droite = erreur de {court.players[0]} → point à {court.players[1]})
               </p>
-              
+
               <div className="point-legend">
                 <div className="legend-item">
                   <div className="legend-symbol normal">●</div>
@@ -686,10 +707,10 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
                   <span className="score">{court.score.player2}</span>
                 </div>
               </div>
-              
-              
+
+
               <div className="rally-marking-controls">
-                <button 
+                <button
                   className={`mark-score-btn ${isMarkingScore ? 'active' : ''}`}
                   onClick={() => setIsMarkingScore(!isMarkingScore)}
                   title="Cliquer sur le terrain pour marquer le point final"
@@ -698,7 +719,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
                 </button>
               </div>
             </div>
-            
+
             <canvas
               ref={canvasRef}
               width={COURT_WIDTH + (OUTER_MARGIN * 2)}
@@ -708,10 +729,10 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
               onTouchEnd={handleCanvasTouch}
               className="court-canvas"
             />
-            
+
             <p className="rally-instructions">
-              <strong>Instructions :</strong><br/>
-              • <strong>Clic sur le terrain</strong> : Ajouter un point de trajectoire<br/>
+              <strong>Instructions :</strong><br />
+              • <strong>Clic sur le terrain</strong> : Ajouter un point de trajectoire<br />
               • <strong>🎯 Marquer le point</strong> : Cliquer sur le terrain pour marquer l'endroit exact du point final
             </p>
           </div>
@@ -719,7 +740,7 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
       </div>
 
       <div className="court-actions">
-        <button 
+        <button
           className="reset-btn"
           onClick={() => onCourtReset(court.id)}
         >
