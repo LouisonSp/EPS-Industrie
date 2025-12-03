@@ -57,7 +57,8 @@
   border-radius: var(--radius-md);
 }
 
-.zoom-btn {
+.zoom-btn,
+.help-btn {
   background: transparent;
   color: var(--text-secondary);
   border: none;
@@ -69,9 +70,17 @@
   font-weight: 500;
 }
 
-.zoom-btn:hover {
+.zoom-btn:hover,
+.help-btn:hover {
   background: rgba(255, 255, 255, 0.05);
   color: var(--text);
+}
+
+.help-btn.active {
+  background: var(--surface-light);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
 }
 
 .mode-btn {

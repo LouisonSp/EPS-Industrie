@@ -43,11 +43,11 @@ app.post('/api/generate-key', (req, res) => {
     createdAt: new Date(),
     lastActivity: new Date()
   };
-  
+
   activeRooms.set(roomKey, roomData);
-  
-  res.json({ 
-    success: true, 
+
+  res.json({
+    success: true,
     roomKey,
     message: `Clé de salle générée: ${roomKey}`
   });
@@ -57,11 +57,11 @@ app.post('/api/generate-key', (req, res) => {
 app.get('/api/validate-key/:key', (req, res) => {
   const { key } = req.params;
   const roomData = activeRooms.get(key);
-  
+
   if (roomData) {
     roomData.lastActivity = new Date();
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       roomData: {
         key: roomData.key,
         courts: roomData.courts,
@@ -69,9 +69,9 @@ app.get('/api/validate-key/:key', (req, res) => {
       }
     });
   } else {
-    res.json({ 
-      success: false, 
-      message: "Clé de salle invalide ou expirée" 
+    res.json({
+      success: false,
+      message: "Clé de salle invalide ou expirée"
     });
   }
 });
@@ -79,7 +79,7 @@ app.get('/api/validate-key/:key', (req, res) => {
 // Gestion des connexions Socket.IO
 io.on('connection', (socket) => {
   console.log('Nouveau client connecté:', socket.id);
-  
+
   // Rejoindre une salle
   socket.on('join-room', (roomKey) => {
     const roomData = activeRooms.get(roomKey);
@@ -92,12 +92,12 @@ io.on('connection', (socket) => {
       socket.emit('room-error', { message: 'Salle introuvable' });
     }
   });
-  
+
   // Mise à jour du score
   socket.on('update-score', (data) => {
     const { roomKey, courtId, player, points, x, y } = data;
     const roomData = activeRooms.get(roomKey);
-    
+
     if (roomData) {
       const court = roomData.courts.find(c => c.id === courtId);
       if (court) {
@@ -106,7 +106,7 @@ io.on('connection', (socket) => {
         } else {
           court.score.player2 += points;
         }
-        
+
         // Ajouter le point de score si les coordonnées sont fournies
         if (x !== undefined && y !== undefined) {
           court.scorePoints.push({
@@ -117,9 +117,9 @@ io.on('connection', (socket) => {
             type: data.type || 'normal'
           });
         }
-        
+
         roomData.lastActivity = new Date();
-        
+
         io.to(roomKey).emit('score-updated', {
           courtId,
           score: court.score,
@@ -128,18 +128,18 @@ io.on('connection', (socket) => {
       }
     }
   });
-  
+
   // Ajout d'un point d'échange
   socket.on('add-rally-point', (data) => {
     const { roomKey, courtId, x, y, timestamp } = data;
     const roomData = activeRooms.get(roomKey);
-    
+
     if (roomData) {
       const court = roomData.courts.find(c => c.id === courtId);
       if (court) {
         court.rallyPoints.push({ x, y, timestamp });
         roomData.lastActivity = new Date();
-        
+
         io.to(roomKey).emit('rally-point-added', {
           courtId,
           point: { x, y, timestamp }
@@ -147,12 +147,12 @@ io.on('connection', (socket) => {
       }
     }
   });
-  
+
   // Changement de mode (score/échange)
   socket.on('change-mode', (data) => {
     const { roomKey, courtId, mode } = data;
     const roomData = activeRooms.get(roomKey);
-    
+
     if (roomData) {
       const court = roomData.courts.find(c => c.id === courtId);
       if (court) {
@@ -163,7 +163,7 @@ io.on('connection', (socket) => {
           court.scorePoints = []; // Effacer les points de score
         }
         roomData.lastActivity = new Date();
-        
+
         io.to(roomKey).emit('mode-changed', {
           courtId,
           mode
@@ -171,12 +171,12 @@ io.on('connection', (socket) => {
       }
     }
   });
-  
+
   // Réinitialisation d'un terrain
   socket.on('reset-court', (data) => {
     const { roomKey, courtId } = data;
     const roomData = activeRooms.get(roomKey);
-    
+
     if (roomData) {
       const court = roomData.courts.find(c => c.id === courtId);
       if (court) {
@@ -184,7 +184,7 @@ io.on('connection', (socket) => {
         court.rallyPoints = [];
         court.scorePoints = [];
         roomData.lastActivity = new Date();
-        
+
         io.to(roomKey).emit('court-reset', { courtId });
       }
     }
@@ -194,12 +194,12 @@ io.on('connection', (socket) => {
   socket.on('add-court', (data) => {
     const { roomKey } = data;
     const roomData = activeRooms.get(roomKey);
-    
+
     if (roomData) {
       // Trouver le prochain ID disponible
       const maxId = Math.max(...roomData.courts.map(c => c.id), 0);
       const newCourtId = maxId + 1;
-      
+
       // Créer le nouveau terrain
       const newCourt = {
         id: newCourtId,
@@ -210,18 +210,38 @@ io.on('connection', (socket) => {
         scorePoints: [],
         mode: 'scoring'
       };
-      
+
       // Ajouter le terrain à la salle
       roomData.courts.push(newCourt);
       roomData.lastActivity = new Date();
-      
+
       // Notifier tous les clients de la salle
       io.to(roomKey).emit('court-added', { court: newCourt });
-      
+
       console.log(`Nouveau terrain ${newCourtId} ajouté à la salle ${roomKey}`);
     }
   });
-  
+
+  // Mise à jour du nom d'un joueur
+  socket.on('update-player-name', (data) => {
+    const { roomKey, courtId, playerIndex, name } = data;
+    const roomData = activeRooms.get(roomKey);
+
+    if (roomData) {
+      const court = roomData.courts.find(c => c.id === courtId);
+      if (court && court.players[playerIndex] !== undefined) {
+        court.players[playerIndex] = name;
+        roomData.lastActivity = new Date();
+
+        io.to(roomKey).emit('player-name-updated', {
+          courtId,
+          playerIndex,
+          name
+        });
+      }
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('Client déconnecté:', socket.id);
   });
@@ -242,7 +262,7 @@ setInterval(() => {
 // Servir les fichiers statiques du client en production (après toutes les routes API)
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'client/build')));
-  
+
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
   });

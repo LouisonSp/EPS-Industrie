@@ -42,17 +42,34 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ roomKey, onBack }) => {
         if (!prev) return prev;
         return {
           ...prev,
-          courts: prev.courts.map(court => 
-            court.id === data.courtId 
-              ? { 
-                  ...court, 
-                  score: data.score,
-                  scorePoints: data.scorePoint 
-                    ? [...court.scorePoints, data.scorePoint]
-                    : court.scorePoints
-                }
+          courts: prev.courts.map(court =>
+            court.id === data.courtId
+              ? {
+                ...court,
+                score: data.score,
+                scorePoints: data.scorePoint
+                  ? [...court.scorePoints, data.scorePoint]
+                  : court.scorePoints
+              }
               : court
           )
+        };
+      });
+    });
+
+    newSocket.on('player-name-updated', (data) => {
+      setRoomData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          courts: prev.courts.map(court => {
+            if (court.id === data.courtId) {
+              const newPlayers = [...court.players];
+              newPlayers[data.playerIndex] = data.name;
+              return { ...court, players: newPlayers };
+            }
+            return court;
+          })
         };
       });
     });
@@ -62,8 +79,8 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ roomKey, onBack }) => {
         if (!prev) return prev;
         return {
           ...prev,
-          courts: prev.courts.map(court => 
-            court.id === data.courtId 
+          courts: prev.courts.map(court =>
+            court.id === data.courtId
               ? { ...court, rallyPoints: [...court.rallyPoints, data.point] }
               : court
           )
@@ -76,8 +93,8 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ roomKey, onBack }) => {
         if (!prev) return prev;
         return {
           ...prev,
-          courts: prev.courts.map(court => 
-            court.id === data.courtId 
+          courts: prev.courts.map(court =>
+            court.id === data.courtId
               ? { ...court, mode: data.mode }
               : court
           )
@@ -90,14 +107,14 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ roomKey, onBack }) => {
         if (!prev) return prev;
         return {
           ...prev,
-          courts: prev.courts.map(court => 
-            court.id === data.courtId 
-                ? { 
-                    ...court, 
-                    score: { player1: 0, player2: 0 },
-                    rallyPoints: [],
-                    scorePoints: []
-                  }
+          courts: prev.courts.map(court =>
+            court.id === data.courtId
+              ? {
+                ...court,
+                score: { player1: 0, player2: 0 },
+                rallyPoints: [],
+                scorePoints: []
+              }
               : court
           )
         };
@@ -136,12 +153,12 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ roomKey, onBack }) => {
 
   const handleRallyPointAdd = (courtId: number, x: number, y: number) => {
     if (socket) {
-      socket.emit('add-rally-point', { 
-        roomKey, 
-        courtId, 
-        x, 
-        y, 
-        timestamp: Date.now() 
+      socket.emit('add-rally-point', {
+        roomKey,
+        courtId,
+        x,
+        y,
+        timestamp: Date.now()
       });
     }
   };
@@ -161,6 +178,12 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ roomKey, onBack }) => {
   const handleAddCourt = () => {
     if (socket) {
       socket.emit('add-court', { roomKey });
+    }
+  };
+
+  const handlePlayerNameUpdate = (courtId: number, playerIndex: number, name: string) => {
+    if (socket) {
+      socket.emit('update-player-name', { roomKey, courtId, playerIndex, name });
     }
   };
 
@@ -219,6 +242,7 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ roomKey, onBack }) => {
                   onRallyPointAdd={handleRallyPointAdd}
                   onModeChange={handleModeChange}
                   onCourtReset={handleCourtReset}
+                  onPlayerNameUpdate={handlePlayerNameUpdate}
                   onZoom={() => setZoomedCourtId(null)}
                   isZoomed={true}
                 />
@@ -236,6 +260,7 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ roomKey, onBack }) => {
               onRallyPointAdd={handleRallyPointAdd}
               onModeChange={handleModeChange}
               onCourtReset={handleCourtReset}
+              onPlayerNameUpdate={handlePlayerNameUpdate}
               onZoom={() => setZoomedCourtId(court.id)}
               isZoomed={false}
             />
@@ -246,7 +271,7 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ roomKey, onBack }) => {
       {!zoomedCourtId && (
         <div className="monitor-footer">
           <p>
-            💡 <strong>Instructions:</strong> 
+            💡 <strong>Instructions:</strong>
             Cliquez sur "Score" pour marquer les points, ou "Échanges" pour tracer les trajectoires du volant.
             Tous les utilisateurs connectés voient les modifications en temps réel.
           </p>

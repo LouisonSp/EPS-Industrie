@@ -9,6 +9,7 @@ interface BadmintonCourtProps {
   onRallyPointAdd: (courtId: number, x: number, y: number) => void;
   onModeChange: (courtId: number, mode: 'scoring' | 'rally') => void;
   onCourtReset: (courtId: number) => void;
+  onPlayerNameUpdate: (courtId: number, playerIndex: number, name: string) => void;
   onZoom: () => void;
   isZoomed: boolean;
 }
@@ -20,12 +21,17 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
   onRallyPointAdd,
   onModeChange,
   onCourtReset,
+  onPlayerNameUpdate,
   onZoom,
   isZoomed
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [isMarkingScore, setIsMarkingScore] = useState(false);
+  const [editingPlayerIndex, setEditingPlayerIndex] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [showHelp, setShowHelp] = useState(false);
+
 
   // Dimensions du terrain (proportions réelles d'un terrain de badminton)
   // En mode zoom, on agrandit le terrain
@@ -596,6 +602,13 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
               🔍 Zoom
             </button>
           )}
+          <button
+            className={`help-btn ${showHelp ? 'active' : ''}`}
+            onClick={() => setShowHelp(!showHelp)}
+            title={showHelp ? "Masquer l'aide" : "Afficher l'aide"}
+          >
+            ?
+          </button>
         </div>
       </div>
 
@@ -604,7 +617,40 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
           <div className="scoring-mode">
             <div className="players">
               <div className="player">
-                <div className="player-name">{court.players[0]}</div>
+                {editingPlayerIndex === 0 ? (
+                  <input
+                    type="text"
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    onBlur={() => {
+                      if (editingName.trim()) {
+                        onPlayerNameUpdate(court.id, 0, editingName.trim());
+                      }
+                      setEditingPlayerIndex(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        if (editingName.trim()) {
+                          onPlayerNameUpdate(court.id, 0, editingName.trim());
+                        }
+                        setEditingPlayerIndex(null);
+                      }
+                    }}
+                    autoFocus
+                    className="player-name-input"
+                  />
+                ) : (
+                  <div
+                    className="player-name editable"
+                    onClick={() => {
+                      setEditingPlayerIndex(0);
+                      setEditingName(court.players[0]);
+                    }}
+                    title="Cliquer pour modifier le nom"
+                  >
+                    {court.players[0]} ✏️
+                  </div>
+                )}
                 <div className="score-display">
                   <div className="score-buttons">
                     <button
@@ -634,7 +680,40 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
               </div>
               <div className="vs">VS</div>
               <div className="player">
-                <div className="player-name">{court.players[1]}</div>
+                {editingPlayerIndex === 1 ? (
+                  <input
+                    type="text"
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    onBlur={() => {
+                      if (editingName.trim()) {
+                        onPlayerNameUpdate(court.id, 1, editingName.trim());
+                      }
+                      setEditingPlayerIndex(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        if (editingName.trim()) {
+                          onPlayerNameUpdate(court.id, 1, editingName.trim());
+                        }
+                        setEditingPlayerIndex(null);
+                      }
+                    }}
+                    autoFocus
+                    className="player-name-input"
+                  />
+                ) : (
+                  <div
+                    className="player-name editable"
+                    onClick={() => {
+                      setEditingPlayerIndex(1);
+                      setEditingName(court.players[1]);
+                    }}
+                    title="Cliquer pour modifier le nom"
+                  >
+                    {court.players[1]} ✏️
+                  </div>
+                )}
                 <div className="score-display">
                   <div className="score-buttons">
                     <button
@@ -674,24 +753,28 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
                 onTouchEnd={handleCourtTouch}
                 className="court-canvas interactive"
               />
-              <p className="court-instructions">
-                Cliquez sur le terrain pour marquer un point normal, ou dans la zone grise pour marquer une sortie (sortie à gauche = erreur de {court.players[1]} → point à {court.players[0]}, sortie à droite = erreur de {court.players[0]} → point à {court.players[1]})
-              </p>
+              {showHelp && (
+                <>
+                  <p className="court-instructions">
+                    Cliquez sur le terrain pour marquer un point normal, ou dans la zone grise pour marquer une sortie (sortie à gauche = erreur de {court.players[1]} → point à {court.players[0]}, sortie à droite = erreur de {court.players[0]} → point à {court.players[1]})
+                  </p>
 
-              <div className="point-legend">
-                <div className="legend-item">
-                  <div className="legend-symbol normal">●</div>
-                  <span>Point normal</span>
-                </div>
-                <div className="legend-item">
-                  <div className="legend-symbol net">■</div>
-                  <span>Point via filet</span>
-                </div>
-                <div className="legend-item">
-                  <div className="legend-symbol out">▲</div>
-                  <span>Point sur sortie</span>
-                </div>
-              </div>
+                  <div className="point-legend">
+                    <div className="legend-item">
+                      <div className="legend-symbol normal">●</div>
+                      <span>Point normal</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-symbol net">■</div>
+                      <span>Point via filet</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-symbol out">▲</div>
+                      <span>Point sur sortie</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         ) : (
@@ -731,11 +814,13 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
               className="court-canvas"
             />
 
-            <p className="rally-instructions">
-              <strong>Instructions :</strong><br />
-              • <strong>Clic sur le terrain</strong> : Ajouter un point de trajectoire<br />
-              • <strong>🎯 Marquer le point</strong> : Cliquer sur le terrain pour marquer l'endroit exact du point final
-            </p>
+            {showHelp && (
+              <p className="rally-instructions">
+                <strong>Instructions :</strong><br />
+                • <strong>Clic sur le terrain</strong> : Ajouter un point de trajectoire<br />
+                • <strong>🎯 Marquer le point</strong> : Cliquer sur le terrain pour marquer l'endroit exact du point final
+              </p>
+            )}
           </div>
         )}
       </div>
