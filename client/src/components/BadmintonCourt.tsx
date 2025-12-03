@@ -80,11 +80,11 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
     const courtY = OUTER_MARGIN;
 
     // 2. Fond du terrain (Zone de jeu)
-    ctx.fillStyle = '#1e293b'; // var(--surface)
+    ctx.fillStyle = '#ffffff'; // Blanc
     ctx.fillRect(courtX, courtY, COURT_WIDTH, COURT_HEIGHT);
 
     // Configuration des lignes
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.strokeStyle = '#000000'; // Noir
     ctx.lineWidth = 2 * zoomFactor;
 
     // Dimensions officielles (proportions)
@@ -128,7 +128,8 @@ const BadmintonCourt: React.FC<BadmintonCourtProps> = ({
 
     // Poteaux (cercles aux extrémités)
     const poleRadius = 3 * zoomFactor;
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = '#000000'; // Noir
+
 
     // Poteau haut
     ctx.beginPath();

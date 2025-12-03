@@ -233,7 +233,7 @@
   border: 2px solid var(--surface-light);
   border-radius: var(--radius-md);
   cursor: crosshair;
-  background: #1e293b;
+  background: #ffffff;
   /* Darker court background */
   display: block;
   margin: 0 auto;
