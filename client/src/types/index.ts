@@ -39,6 +39,7 @@ export interface SocketEvents {
   'reset-court': (data: { roomKey: string; courtId: number }) => void;
   'add-court': (data: { roomKey: string }) => void;
   'room-joined': (roomData: RoomData) => void;
+  'update-score': (data: { roomKey: string; courtId: number; player: 1 | 2; points: number; x?: number; y?: number; type?: 'normal' | 'net' | 'out' }) => void;
   'score-updated': (data: { courtId: number; score: { player1: number; player2: number }; scorePoint?: ScorePoint }) => void;
   'player-name-updated': (data: { courtId: number; playerIndex: number; name: string }) => void;
   'rally-point-added': (data: { courtId: number; point: RallyPoint }) => void;
